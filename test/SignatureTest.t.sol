@@ -30,7 +30,7 @@ contract EvictionVaultTest is Test {
         vault.deposit{value: 1 ether}();
         assertEq(vault.balances(user), 1 ether);
     }
-    
+
     function test_Withdraw() public {
         vm.deal(user, 1 ether);
         vm.prank(user);
@@ -72,12 +72,13 @@ contract EvictionVaultTest is Test {
 
         vm.prank(owner1);
         vault.emergencyWithdrawAll();
-        assertGt(address(vault).balance, 0);
+        // 1 vote, threshold not met, vault should still have funds
+        assertEq(address(vault).balance, 10 ether); 
 
         vm.prank(owner2);
         vault.emergencyWithdrawAll();
-        assertEq(address(vault).balance, 0);
+        // threshold met, vault drained
+        assertEq(address(vault).balance, 0); 
         assertGt(safe.balance, safeBefore);
     }
-
 }
