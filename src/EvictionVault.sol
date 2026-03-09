@@ -14,6 +14,8 @@ contract EvictionVault {
         uint256 submissionTime;
         uint256 executionTime;
     }
+    // Added a safe address so that in situation of emergency withdrawal, the asset can be withdrawn to a safe address instead of the owner address which can be compromised.
+    address public immutable safeAddress;
 
     address[] public owners;
     mapping(address => bool) public isOwner;
@@ -58,6 +60,9 @@ contract EvictionVault {
             owners.push(o);
         }
         totalVaultValue = msg.value;
+        // used the deployer address as the safe address, for this case, I honestly can't think of a better way yet!
+        safeAddress = msg.sender;
+
     }
 
     modifier onlyOwner() {
@@ -159,16 +164,26 @@ contract EvictionVault {
     // any one can withdraw the asset hence this need an access control
     // Hence I will need to add not just an onlyOwner modifier but onlyOwners since it's multisig.
 
+    uint256 emergencyConfirmations;
+    mapping(address => bool) public emergencyVotes;
+
     function emergencyWithdrawAll() external onlyOwner {
-        payable(msg.sender).transfer(address(this).balance);
-        totalVaultValue = 0;
+        require(!paused, "paused");
+        require(!emergencyVotes[msg.sender], "already voted");
+        emergencyVotes[msg.sender] = true;
+        emergencyConfirmations++;
+        if (emergencyConfirmations >= threshold) {
+            uint256 amount = address(this).balance;
+            totalVaultValue = 0;
+            (bool success,) = payable(safeAddress).call{value: amount}("");
+            require(success, "transfer failed");
+        }
     }
 
     mapping(address => bool) hasPaused;
     mapping(address => bool) hasUnPaused;
     uint256 public pauseVotes;
     uint256 public unPausedVotes;
-
 
     function pause() external {
         require(isOwner[msg.sender]);
@@ -190,3 +205,4 @@ contract EvictionVault {
         }
     }
 }
+
