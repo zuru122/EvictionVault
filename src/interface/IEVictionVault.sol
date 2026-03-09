@@ -15,6 +15,10 @@ interface IEvictionVault {
     function submitTransaction(address to, uint256 value, bytes calldata data) external;
     function confirmTransaction(uint256 txId) external;
     function executeTransaction(uint256 txId) external;
+    function setMerkleRoot(bytes32 root) external;
     function claim(bytes32[] calldata proof, uint256 amount) external;
+    function verifySignature(address signer, bytes32 messageHash, bytes memory signature) external pure returns (bool);
     function emergencyWithdrawAll() external;
+    function pause() external;
+    function unpause() external;
 }
