@@ -62,7 +62,6 @@ contract EvictionVault {
         totalVaultValue = msg.value;
         // used the deployer address as the safe address, for this case, I honestly can't think of a better way yet!
         safeAddress = msg.sender;
-
     }
 
     modifier onlyOwner() {
@@ -70,10 +69,11 @@ contract EvictionVault {
         _;
     }
 
+    // change the tx.origin to msg.sender.
     receive() external payable {
-        balances[tx.origin] += msg.value;
+        balances[msg.sender] += msg.value;
         totalVaultValue += msg.value;
-        emit Deposit(tx.origin, msg.value);
+        emit Deposit(msg.sender, msg.value);
     }
 
     function deposit() external payable {
@@ -131,6 +131,8 @@ contract EvictionVault {
         Transaction storage txn = transactions[txId];
         require(txn.confirmations >= threshold);
         require(!txn.executed);
+        // check the timelock before excuting transaction.
+        require(txn.executionTime > 0, "timelock not started");
         require(block.timestamp >= txn.executionTime);
         txn.executed = true;
         (bool s,) = txn.to.call{value: txn.value}(txn.data);
