@@ -10,7 +10,7 @@ contract EvictionVaultTest is Test {
     address owner2;
     address user;
 
-    receive() external payable {}  // ✅ allows test contract to receive ETH
+    receive() external payable {}
 
     function setUp() public {
         owner1 = makeAddr("owner1");
@@ -30,5 +30,25 @@ contract EvictionVaultTest is Test {
         vault.deposit{value: 1 ether}();
         assertEq(vault.balances(user), 1 ether);
     }
+    
+    function test_Withdraw() public {
+        vm.deal(user, 1 ether);
+        vm.prank(user);
+        vault.deposit{value: 1 ether}();
+        vm.prank(user);
+        vault.withdraw(1 ether);
+        assertEq(vault.balances(user), 0);
+    }
 
+    function test_MultisigExecute() public {
+        vm.prank(owner1);
+        vault.submitTransaction(user, 1 ether, "");
+        vm.prank(owner2);
+        vault.confirmTransaction(0);
+        skip(1 hours);
+        vault.executeTransaction(0);
+
+        (,,, bool executed,,,) = vault.transactions(0);
+        assertTrue(executed);
+    }
 }
