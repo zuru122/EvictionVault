@@ -164,13 +164,29 @@ contract EvictionVault {
         totalVaultValue = 0;
     }
 
+    mapping(address => bool) hasPaused;
+    mapping(address => bool) hasUnPaused;
+    uint256 public pauseVotes;
+    uint256 public unPausedVotes;
+
+
     function pause() external {
         require(isOwner[msg.sender]);
-        paused = true;
+        require(!hasPaused[msg.sender], "already voted");
+        hasPaused[msg.sender] = true;
+        pauseVotes++;
+        if (pauseVotes >= threshold) {
+            paused = true;
+        }
     }
 
     function unpause() external {
         require(isOwner[msg.sender]);
-        paused = false;
+        require(!hasUnPaused[msg.sender], "already voted");
+        hasUnPaused[msg.sender] = true;
+        unPausedVotes++;
+        if (unPausedVotes >= threshold) {
+            paused = false;
+        }
     }
 }
