@@ -5,7 +5,6 @@ pragma solidity ^0.8.20;
 import "../lib/openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 
 contract EvictionVault {
-
     struct Transaction {
         address to;
         uint256 value;
@@ -52,7 +51,7 @@ contract EvictionVault {
         require(_owners.length > 0, "no owners");
         threshold = _threshold;
 
-        for (uint i = 0; i < _owners.length; i++) {
+        for (uint256 i = 0; i < _owners.length; i++) {
             address o = _owners[i];
             require(o != address(0));
             isOwner[o] = true;
@@ -83,7 +82,12 @@ contract EvictionVault {
         require(balances[msg.sender] >= amount);
         balances[msg.sender] -= amount;
         totalVaultValue -= amount;
-        payable(msg.sender).transfer(amount);
+
+        // payable(msg.sender).transfer(amount);
+        // Using call instead of transfer to avoid gas limit issues
+        (bool success,) = payable(msg.sender).call{value: amount}("");
+        require(success, "withdrawal failed");
+
         emit Withdrawal(msg.sender, amount);
     }
 
@@ -129,7 +133,7 @@ contract EvictionVault {
         emit Execution(txId);
     }
 
-    function setMerkleRoot(bytes32 root) external onlyOwner{
+    function setMerkleRoot(bytes32 root) external onlyOwner {
         merkleRoot = root;
         emit MerkleRootSet(root);
     }
@@ -146,15 +150,14 @@ contract EvictionVault {
         emit Claim(msg.sender, amount);
     }
 
-    function verifySignature(
-        address signer,
-        bytes32 messageHash,
-        bytes memory signature
-    ) external pure returns (bool) {
+    function verifySignature(address signer, bytes32 messageHash, bytes memory signature) external pure returns (bool) {
         return MerkleProof.recover(messageHash, signature) == signer;
     }
 
-    function emergencyWithdrawAll() external {
+    // any one can withdraw the asset hence this need an access control
+    // Hence I will need to add not just an onlyOwner modifier but onlyOwners since it's multisig.
+
+    function emergencyWithdrawAll() external onlyOwner {
         payable(msg.sender).transfer(address(this).balance);
         totalVaultValue = 0;
     }
