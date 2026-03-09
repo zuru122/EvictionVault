@@ -145,7 +145,9 @@ contract EvictionVault {
         require(computed == merkleRoot);
         require(!claimed[msg.sender]);
         claimed[msg.sender] = true;
-        payable(msg.sender).transfer(amount);
+        // change from transfer to call to avoid gas limit issues also.
+        (bool success,) = payable(msg.sender).call{value: amount}("");
+        require(success, "withdrawal failed");
         totalVaultValue -= amount;
         emit Claim(msg.sender, amount);
     }
