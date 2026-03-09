@@ -1,66 +1,45 @@
-## Foundry
+EvictionVault — Bug Fixes & Design Decisions
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+BUG FIXES
 
-Foundry consists of:
+1. emergencyWithdrawAll — Public Drain
+Any single owner could drain the vault alone. Fixed by adding a vote
+counter so the withdrawal only executes once threshold owners have
+approved. Funds go to an immutable safeAddress set at deployment, not
+to whoever calls the function.
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+2. pause/unpause — Single Owner Control
+Either function could be triggered by one owner. Fixed with the same
+voting pattern — pauseVotes and unPausedVotes counters ensure threshold
+agreement is required before state changes.
 
-## Documentation
+3. setMerkleRoot — Callable by Anyone
+Missing access control. Fixed by adding the onlyOwner modifier.
 
-https://book.getfoundry.sh/
+4. receive() — Used tx.origin
+tx.origin always refers to the original EOA, not the direct caller.change to msg.sender.
 
-## Usage
+5. withdraw & claim — Used .transfer()
+changed to call which is cheaper
 
-### Build
+6. Timelock Bypass
+executeTransaction checked block.timestamp >= txn.executionTime, but
+executionTime defaults to 0, meaning transactions that never reached
+threshold could still execute immediately. Fixed by adding
+require(txn.executionTime > 0, "timelock not started").
 
-```shell
-$ forge build
-```
+7. verifySignature — Wrong Library (was showing error on my vsCode, hence the fix)
+MerkleProof.recover() does not exist. MerkleProof is for verifying
+merkle tree proofs. Signature recovery requires ECDSA.recover(). Fixed
+by introducing a SignatureVerifier library that imports and uses ECDSA
+from OpenZeppelin.
 
-### Test
+PROJECT STRUCTURE
 
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+src/
+  EvictionVault.sol
+  interfaces/IEvictionVault.sol
+  base/MultiSig.sol
+  base/MerkleDistributor.sol
+  base/Pausable.sol
+  libraries/SignatureVerifier.sol
