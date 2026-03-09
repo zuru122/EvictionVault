@@ -61,6 +61,11 @@ contract EvictionVault {
         totalVaultValue = msg.value;
     }
 
+    modifier onlyOwner() {
+        require(isOwner[msg.sender], "not owner");
+        _;
+    }
+
     receive() external payable {
         balances[tx.origin] += msg.value;
         totalVaultValue += msg.value;
@@ -124,7 +129,7 @@ contract EvictionVault {
         emit Execution(txId);
     }
 
-    function setMerkleRoot(bytes32 root) external {
+    function setMerkleRoot(bytes32 root) external onlyOwner{
         merkleRoot = root;
         emit MerkleRootSet(root);
     }
