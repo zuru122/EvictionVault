@@ -37,10 +37,13 @@ from OpenZeppelin.
 
 ### PROJECT STRUCTURE
 
-src/
+``` 
+    src/
   EvictionVault.sol
   interfaces/IEvictionVault.sol
   base/MultiSig.sol
   base/MerkleDistributor.sol
   base/Pausable.sol
-  librarirs/SignatureVerifier.sol
+  librarirs/SignatureVerifier.sol 
+
+  ```
