@@ -51,4 +51,33 @@ contract EvictionVaultTest is Test {
         (,,, bool executed,,,) = vault.transactions(0);
         assertTrue(executed);
     }
+
+    function test_Pause() public {
+        vm.prank(owner1);
+        vault.pause();
+        vm.prank(owner2);
+        vault.pause();
+        assertTrue(vault.paused());
+    }
+
+    function test_PauseFailsWithoutThreshold() public {
+        vm.prank(owner1);
+        vault.pause();
+        assertFalse(vault.paused());
+    }
+
+    function test_EmergencyWithdrawAll() public {
+        address safe = vault.safeAddress();
+        uint256 safeBefore = safe.balance;
+
+        vm.prank(owner1);
+        vault.emergencyWithdrawAll();
+        assertGt(address(vault).balance, 0);
+
+        vm.prank(owner2);
+        vault.emergencyWithdrawAll();
+        assertEq(address(vault).balance, 0);
+        assertGt(safe.balance, safeBefore);
+    }
+
 }
